@@ -27,7 +27,7 @@ def affine_forward(x, w, b):
     # will need to reshape the input into rows.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    out = np.dot(x.reshape(x.shape[0], -1), w) + b
+    out = np.dot(np.reshape(x, (x.shape[0], -1)), w) + b
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -60,8 +60,8 @@ def affine_backward(dout, cache):
     # TODO: Implement the affine backward pass.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    dx = np.dot(dout, np.transpose(w)).reshape(x.shape)
-    dw = np.dot(np.transpose(x.reshape(x.shape[0], -1)), dout).reshape(w.shape)
+    dx = np.reshape(np.dot(dout, np.transpose(w)), x.shape)
+    dw = np.reshape(np.dot(np.transpose(np.reshape(x, (x.shape[0], -1))), dout), w.shape)
     db = np.dot(np.transpose(dout), np.ones(x.shape[0]))
     pass
 
@@ -88,8 +88,7 @@ def relu_forward(x):
     # TODO: Implement the ReLU forward pass.                                  #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    out = x.copy()
-    out[out < 0] = 0
+    out = np.maximum(0, x)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -149,7 +148,15 @@ def svm_loss(x, y):
     # cs231n/classifiers/linear_svm.py.                                       #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    num_train = x.shape[0]
+    correct_class_score = np.reshape(x[np.arange(num_train), y], (num_train, 1))
+    svm_matrix = np.maximum(0, x - correct_class_score + 1)
+    svm_matrix[np.arange(num_train), y] = 0
+    loss = np.sum(svm_matrix) / num_train
+    
+    svm_matrix[svm_matrix > 0] = 1
+    svm_matrix[np.arange(num_train), y] = - np.sum(svm_matrix, axis = 1)
+    dx = svm_matrix / num_train
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -180,7 +187,18 @@ def softmax_loss(x, y):
     # cs231n/classifiers/softmax.py.                                          #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    num_train = x.shape[0]
+    x = x - np.reshape(np.max(x, axis = 1), (num_train, 1))
+    # x -= np.reshape(np.max(x, axis = 1), (num_train, 1))
+    # if use "x -=" instead of "x = x -", it will get a same dx but differnt dx error.
+    # The reason is unknown.
 
+    softmax_matrix = np.exp(x) / np.sum(np.exp(x), axis = 1, keepdims = True)
+    loss = -np.sum(np.log(softmax_matrix[np.arange(num_train), y]))
+    loss /= num_train
+
+    softmax_matrix[np.arange(num_train), y] -= 1
+    dx = softmax_matrix /num_train
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
