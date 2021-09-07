@@ -24,7 +24,7 @@ def affine_forward(x, w, b):
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    out = np.dot(np.reshape(x, (x.shape[0], -1)), w) + b
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -56,7 +56,9 @@ def affine_backward(dout, cache):
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    dx = np.reshape(np.dot(dout, np.transpose(w)), x.shape)
+    dw = np.reshape(np.dot(np.transpose(np.reshape(x, (x.shape[0], -1))), dout), w.shape)
+    db = np.dot(np.transpose(dout), np.ones(x.shape[0]))
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -81,7 +83,7 @@ def relu_forward(x):
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    out = np.maximum(0, x)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -107,7 +109,9 @@ def relu_backward(dout, cache):
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    x[x < 0] = 0
+    x[x > 0] = 1
+    dx = dout * x
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -136,6 +140,17 @@ def softmax_loss(x, y):
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    num_train = x.shape[0]
+    x = x - np.reshape(np.max(x, axis = 1), (num_train, 1))
+    # x -= np.reshape(np.max(x, axis = 1), (num_train, 1))
+    # if use "x -=" instead of "x = x -", it will get a same dx but differnt dx error.
+    # The reason is unknown.
+    softmax_matrix = np.exp(x) / np.sum(np.exp(x), axis = 1, keepdims = True)
+    loss = -np.sum(np.log(softmax_matrix[np.arange(num_train), y]))
+    loss /= num_train
+
+    softmax_matrix[np.arange(num_train), y] -= 1
+    dx = softmax_matrix /num_train
 
     pass
 
