@@ -230,7 +230,13 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # might prove to be helpful.                                          #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+        x_mean = np.mean(x, axis = 0)
+        x_var = np.var(x, axis = 0)
+        x_hat = (x - x_mean) / np.sqrt(x_var + eps)
+        out = gamma * x_hat + beta
+        running_mean = momentum * running_mean + (1 - momentum) * np.mean(x, axis = 0)
+        running_var = momentum * running_var + (1 - momentum) * np.std(x, axis = 0) ** 2
+        cache = (x, x_hat, gamma, beta, x_mean, x_var, eps)
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -245,7 +251,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Store the result in the out variable.                               #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+        out = gamma * (x - running_mean) / np.sqrt(running_var + eps) + beta
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -286,7 +292,14 @@ def batchnorm_backward(dout, cache):
     # might prove to be helpful.                                              #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    x, x_hat, gamma, beta, x_mean, x_var, eps = cache
+    m = x.shape[0]
+    dx_hat = dout * gamma
+    dx_mean = np.sum(dx_hat * (-1 / np.sqrt(x_var + eps)), axis = 0)
+    dx_var = np.sum(dx_hat * (x - x_mean) * (-0.5 * (x_var + eps) ** -1.5) , axis = 0)
+    dx = dx_hat / np.sqrt(x_var + eps) + dx_mean / m + dx_var * (2 * (x - x_mean) / m)
+    dgamma = np.sum(dout * x_hat, axis = 0)
+    dbeta = np.sum(dout, axis = 0)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -320,7 +333,13 @@ def batchnorm_backward_alt(dout, cache):
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    x, x_hat, gamma, beta, x_mean, x_var, eps = cache
+    m = x.shape[0]
+    dx_hat = dout * gamma
+    dx = m * dx_hat - np.sum(dx_hat, axis = 0) - np.sum(dx_hat * x_hat, axis = 0) * x_hat
+    dx /= m * np.sqrt(x_var + eps)
+    dgamma = np.sum(dout * x_hat, axis = 0)
+    dbeta = np.sum(dout, axis = 0)
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -365,7 +384,7 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+    
     pass
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
