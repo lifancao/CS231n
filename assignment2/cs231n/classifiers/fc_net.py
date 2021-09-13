@@ -157,6 +157,7 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         x, caches = X, []
+        dropout_caches = []
         for i in range(self.num_layers - 1):
             w = self.params['W' + str(i + 1)]
             b = self.params['b' + str(i + 1)]
@@ -167,6 +168,9 @@ class FullyConnectedNet(object):
                 beta = self.params['beta' + str(i + 1)]
                 bn_param = self.bn_params[i]
                 x, cache = affine_bn_relu_forward(x, w, b, gamma, beta, bn_param)
+            if self.use_dropout:
+                x, dropout_cache = dropout_forward(x, self.dropout_param)
+                dropout_caches.append(dropout_cache)
             caches.append(cache)
             
         scores, cache = affine_forward(x, self.params['W' + \
@@ -209,6 +213,8 @@ class FullyConnectedNet(object):
         grads['b' + str(self.num_layers)] = db
 
         for i in range(self.num_layers - 2, -1, -1):
+            if self.use_dropout:
+                dx = dropout_backward(dx, dropout_caches[i])
             if self.normalization == None:
                 dx, dw, db = affine_relu_backward(dx, caches[i])
                 grads['W' + str(i + 1)] = dw + self.reg * self.params['W' + str(i + 1)]
