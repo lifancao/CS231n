@@ -41,9 +41,9 @@ def affine_bn_relu_forward(x, w, b, gamma, beta, bn_param):
     - out: Output from the pooling layer
     - cache: Object to give to the backward pass
     """
-    a, fc_cache = affine_forward(x, w, b)
-    an, bn_cache = batchnorm_forward(a, gamma, beta, bn_param)
-    out, relu_cache = relu_forward(an)
+    out, fc_cache = affine_forward(x, w, b)
+    out, bn_cache = batchnorm_forward(out, gamma, beta, bn_param)
+    out, relu_cache = relu_forward(out)
     cache = (fc_cache, bn_cache, relu_cache)
     return out, cache
 
@@ -51,9 +51,39 @@ def affine_bn_relu_backward(dout, cache):
     """Backward pass for the affine-bn-relu convenience layer.
     """
     fc_cache, bn_cache, relu_cache = cache
-    dan = relu_backward(dout, relu_cache)
-    da, dgamma, dbeta = batchnorm_backward(dan, bn_cache)
-    dx, dw, db = affine_backward(da, fc_cache)
+    dout = relu_backward(dout, relu_cache)
+    dout, dgamma, dbeta = batchnorm_backward(dout, bn_cache)
+    dx, dw, db = affine_backward(dout, fc_cache)
+    return dx, dw, db, dgamma, dbeta
+pass
+
+def affine_ln_relu_forward(x, w, b, gamma, beta, ln_param):
+    """Convenience layer that performs an affine transform, a layer normalization, and a ReLU.
+    
+    Inputs:
+    - x: Input to the convolutional layer
+    - w, b: Weights for the affine layer
+    - gamma, beta: Arrays of shape (D2,) and (D2,) giving scale and shift
+      parameters for layer normalization.
+    - ln_param: Dictionary of parameters for layer normalization.
+
+    Returns a tuple of:
+    - out: Output from the pooling layer
+    - cache: Object to give to the backward pass
+    """
+    out, fc_cache = affine_forward(x, w, b)
+    out, ln_cache = layernorm_forward(out, gamma, beta, ln_param)
+    out, relu_cache = relu_forward(out)
+    cache = (fc_cache, ln_cache, relu_cache)
+    return out, cache
+
+def affine_ln_relu_backward(dout, cache):
+    """Backward pass for the affine-ln-relu convenience layer.
+    """
+    fc_cache, ln_cache, relu_cache = cache
+    dout = relu_backward(dout, relu_cache)
+    dout, dgamma, dbeta = layernorm_backward(dout, ln_cache)
+    dx, dw, db = affine_backward(dout, fc_cache)
     return dx, dw, db, dgamma, dbeta
 pass
 
