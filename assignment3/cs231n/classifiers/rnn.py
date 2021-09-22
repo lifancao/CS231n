@@ -147,7 +147,25 @@ class CaptioningRNN:
         # in your implementation, if needed.                                       #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        h0, cache_h0 = affine_forward(features, W_proj, b_proj)
+        x, cache_x = word_embedding_forward(captions_in, W_embed)
+        
+        if self.cell_type == "rnn":
+            h, cache_h = rnn_forward(x, h0, Wx, Wh, b)
+        
+        out, cache_out = temporal_affine_forward(h, W_vocab, b_vocab)
+        loss, dx = temporal_softmax_loss(out, captions_out, mask)
+        
+        dh, dW_vocab, db_vocab = temporal_affine_backward(dx, cache_out)
+        
+        if self.cell_type == 'rnn':
+           dx, dh0, dWx, dWh, db = rnn_backward(dh, cache_h)
 
+        dW_embed = word_embedding_backward(dx, cache_x)  
+        dfeatures, dW_proj, db_proj = affine_backward(dh0, cache_h0)
+
+        grads = {"W_proj": dW_proj, "b_proj": db_proj, "W_embed": dW_embed, "Wx": dWx, \
+        "Wh": dWh, "b": db, "W_vocab": dW_vocab, "b_vocab": db_vocab}
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -215,7 +233,18 @@ class CaptioningRNN:
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+        h0, _ = affine_forward(features, W_proj, b_proj)
+        c0 = np.zeros(h0.shape)
+        V, W = W_embed.shape
+        x = np.ones((N, W)) * W_embed[self._start]
+        for i in range(max_length):
+            if self.cell_type == "rnn":
+               next_h, _ = rnn_step_forward(x, h0, Wx, Wh, b)
+            out, _ = affine_forward(next_h, W_vocab, b_vocab)
+            max_indices = out.argmax(axis = 1)
+            captions[:, i] = max_indices
+            x = W_embed[max_indices]
+            h0 = next_h
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
