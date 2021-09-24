@@ -152,7 +152,9 @@ class CaptioningRNN:
         
         if self.cell_type == "rnn":
             h, cache_h = rnn_forward(x, h0, Wx, Wh, b)
-        
+        if self.cell_type == "lstm":
+            h, cache_h = lstm_forward(x, h0, Wx, Wh, b)
+
         out, cache_out = temporal_affine_forward(h, W_vocab, b_vocab)
         loss, dx = temporal_softmax_loss(out, captions_out, mask)
         
@@ -160,6 +162,8 @@ class CaptioningRNN:
         
         if self.cell_type == 'rnn':
            dx, dh0, dWx, dWh, db = rnn_backward(dh, cache_h)
+        if self.cell_type == 'lstm':
+           dx, dh0, dWx, dWh, db = lstm_backward(dh, cache_h)
 
         dW_embed = word_embedding_backward(dx, cache_x)  
         dfeatures, dW_proj, db_proj = affine_backward(dh0, cache_h0)
@@ -237,9 +241,13 @@ class CaptioningRNN:
         c0 = np.zeros(h0.shape)
         V, W = W_embed.shape
         x = np.ones((N, W)) * W_embed[self._start]
+
         for i in range(max_length):
             if self.cell_type == "rnn":
                next_h, _ = rnn_step_forward(x, h0, Wx, Wh, b)
+            if self.cell_type == "lstm":
+               next_h, next_c, _ = lstm_step_forward(x, h0, c0, Wx, Wh, b)
+               c0 = next_c
             out, _ = affine_forward(next_h, W_vocab, b_vocab)
             max_indices = out.argmax(axis = 1)
             captions[:, i] = max_indices
